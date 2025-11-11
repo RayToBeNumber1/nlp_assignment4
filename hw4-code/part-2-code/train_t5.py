@@ -155,7 +155,7 @@ def eval_epoch(args, model, dev_loader, gt_sql_pth, model_sql_path, gt_record_pa
             decoder_input = decoder_input.to(DEVICE)
             decoder_targets = decoder_targets.to(DEVICE)
             
-            # 计算loss
+         
             logits = model(
                 input_ids=encoder_input,
                 attention_mask=encoder_mask,
@@ -169,30 +169,29 @@ def eval_epoch(args, model, dev_loader, gt_sql_pth, model_sql_path, gt_record_pa
             total_loss += loss.item() * num_tokens
             total_tokens += num_tokens
             
-            # 生成SQL查询（用于计算metrics）
+           
             generated_ids = model.generate(
                 input_ids=encoder_input,
                 attention_mask=encoder_mask,
-                max_length=768,  # 改为768以支持长SQL
+                max_length=768,  
                 num_beams=4,
                 early_stopping=True
             )
             
-            # 解码生成的SQL
+        
             from transformers import T5TokenizerFast
             tokenizer = T5TokenizerFast.from_pretrained('google-t5/t5-small')
             generated_queries = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
             all_generated_queries.extend(generated_queries)
-    
-    # 保存生成的SQL和对应的数据库记录
+ 
     save_queries_and_records(all_generated_queries, model_sql_path, model_record_path)
     
-    # 计算metrics
+
     sql_em, record_em, record_f1, error_msgs = compute_metrics(
         gt_sql_pth, model_sql_path, gt_record_path, model_record_path
     )
     
-    # 计算错误率
+   
     error_rate = len([msg for msg in error_msgs if msg]) / len(error_msgs) if error_msgs else 0
     
     avg_loss = total_loss / total_tokens if total_tokens > 0 else 0
@@ -215,20 +214,20 @@ def test_inference(args, model, test_loader, model_sql_path, model_record_path):
             encoder_input = encoder_input.to(DEVICE)
             encoder_mask = encoder_mask.to(DEVICE)
             
-            # 生成SQL查询
+       
             generated_ids = model.generate(
                 input_ids=encoder_input,
                 attention_mask=encoder_mask,
-                max_length=768,  # 改为768以支持长SQL
+                max_length=768,  
                 num_beams=4,
                 early_stopping=True
             )
             
-            # 解码生成的SQL
+          
             generated_queries = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
             all_generated_queries.extend(generated_queries)
     
-    # 保存生成的SQL和对应的数据库记录
+    
     save_queries_and_records(all_generated_queries, model_sql_path, model_record_path)
     
     print(f"Generated {len(all_generated_queries)} SQL queries for test set")

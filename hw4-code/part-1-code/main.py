@@ -38,7 +38,7 @@ def do_train(args, model, train_dataloader, save_dir="./out"):
     progress_bar = tqdm(range(num_training_steps))
 
     ################################
-    ##### YOUR CODE BEGINGS HERE ###
+  
 
     # Implement the training loop --- make sure to use the optimizer and lr_sceduler (learning rate scheduler)
     # Remember that pytorch uses gradient accumumlation so you need to use zero_grad (https://pytorch.org/tutorials/recipes/recipes/zeroing_out_gradients.html)
@@ -47,24 +47,24 @@ def do_train(args, model, train_dataloader, save_dir="./out"):
 
     for epoch in range(num_epochs):
         for batch in train_dataloader:
-            # 将batch数据移到设备（CPU或GPU）
+      
             batch = {k: v.to(device) for k, v in batch.items()}
             
-            # 前向传播
+           
             outputs = model(**batch)
             loss = outputs.loss
             
-            # 反向传播
+       
             loss.backward()
             
-            # 更新参数
+          
             optimizer.step()
             lr_scheduler.step()
             
-            # 清零梯度（为下一次迭代做准备）
+          
             optimizer.zero_grad()
             
-            # 更新进度条
+
             progress_bar.update(1)
 
 
@@ -113,7 +113,7 @@ def create_augmented_dataloader(args, dataset):
     # dataloader will be for the original training split augmented with 5k random transformed examples from the training set.
     # You may find it helpful to see how the dataloader was created at other place in this code.
 
-    # 1. 获取原始训练数据（已经tokenized）
+   
     tokenized_dataset = dataset.map(tokenize_function, batched=True)
     tokenized_dataset = tokenized_dataset.remove_columns(["text"])
     tokenized_dataset = tokenized_dataset.rename_column("label", "labels")
@@ -121,27 +121,26 @@ def create_augmented_dataloader(args, dataset):
     
     original_train = tokenized_dataset["train"]
     
-    # 2. 创建5000个转换样本
-    # 从训练集中随机选择5000个样本进行转换
+
     augment_dataset = dataset["train"].shuffle(seed=42).select(range(5000))
     
-    # 应用转换
+
     transformed_dataset = augment_dataset.map(custom_transform, load_from_cache_file=False)
     
-    # Tokenize转换后的数据
+
     transformed_tokenized = transformed_dataset.map(tokenize_function, batched=True, load_from_cache_file=False)
     transformed_tokenized = transformed_tokenized.remove_columns(["text"])
     transformed_tokenized = transformed_tokenized.rename_column("label", "labels")
     transformed_tokenized.set_format("torch")
     
-    # 3. 合并原始训练数据和转换后的数据
+
     from datasets import concatenate_datasets
     augmented_train_dataset = concatenate_datasets([original_train, transformed_tokenized])
     
-    # 4. 创建DataLoader
+
     train_dataloader = DataLoader(augmented_train_dataset, shuffle=True, batch_size=args.batch_size)
 
-    ##### YOUR CODE ENDS HERE ######
+ 
 
     return train_dataloader
 

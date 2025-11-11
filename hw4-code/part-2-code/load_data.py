@@ -29,7 +29,7 @@ class T5Dataset(Dataset):
         self.split = split
         self.tokenizer = T5TokenizerFast.from_pretrained('google-t5/t5-small')
         
-        # 加载数据
+       
         nl_path = os.path.join(data_folder, f'{split}.nl')
         self.nl_sentences = load_lines(nl_path)
         
@@ -44,7 +44,7 @@ class T5Dataset(Dataset):
         self.process_data(data_folder, split, self.tokenizer)
 
     def process_data(self, data_folder, split, tokenizer):
-        # 添加任务前缀到自然语言输入
+   
         task_prefix = "translate English to SQL: "
         prefixed_nl_sentences = [task_prefix + sent for sent in self.nl_sentences]
      
@@ -97,7 +97,7 @@ def normal_collate_fn(batch):
         * decoder_targets: The target tokens with which to train the decoder (the tokens following each decoder input)
         * initial_decoder_inputs: The very first input token to be decoder (only to be used in evaluation)
     '''
-    # 解包batch
+
     encoder_ids_list = [item[0] for item in batch]
     encoder_mask_list = [item[1] for item in batch]
     decoder_ids_list = [item[2] for item in batch]
@@ -131,15 +131,15 @@ def test_collate_fn(batch):
         * encoder_mask: Mask of shape BxT associated with padding tokens in the encoder input
         * initial_decoder_inputs: The very first input token to be decoder (only to be used in evaluation)
     '''
-    # 解包batch（测试集只有encoder输入）
+
     encoder_ids_list = [item[0] for item in batch]
     encoder_mask_list = [item[1] for item in batch]
     
-    # Pad编码器输入
+  
     encoder_ids = pad_sequence(encoder_ids_list, batch_first=True, padding_value=PAD_IDX)
     encoder_mask = pad_sequence(encoder_mask_list, batch_first=True, padding_value=0)
     
-    # 解码器初始token（T5使用pad token作为开始token）
+   
     batch_size = encoder_ids.shape[0]
     initial_decoder_inputs = torch.full((batch_size, 1), PAD_IDX, dtype=torch.long)
     

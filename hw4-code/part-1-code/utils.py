@@ -36,7 +36,7 @@ def example_transform(example):
 
 def custom_transform(example):
     ################################
-    ##### YOUR CODE BEGINGS HERE ###
+
 
     # Design and implement the transformation as mentioned in pdf
     # You are free to implement any transformation but the comments at the top roughly describe
@@ -44,7 +44,7 @@ def custom_transform(example):
 
     # You should update example["text"] using your transformation
     
-    # QWERTY键盘邻近键映射
+    
     keyboard_neighbors = {
         'q': ['w', 'a'], 'w': ['q', 'e', 's'], 'e': ['w', 'r', 'd'],
         'r': ['e', 't', 'f'], 't': ['r', 'y', 'g'], 'y': ['t', 'u', 'h'],
@@ -60,21 +60,20 @@ def custom_transform(example):
     
     text = example["text"]
     
-    # 分词
+
     words = word_tokenize(text)
     transformed_words = []
     
     for word in words:
-        # 跳过标点符号和短词
+
         if len(word) <= 2 or not word.isalpha():
             transformed_words.append(word)
             continue
         
-        # 同义词替换 (22%概率)
+
         if random.random() < 0.22:
             synsets = wordnet.synsets(word)
             if synsets:
-                # 获取所有同义词
                 synonyms = []
                 for syn in synsets:
                     for lemma in syn.lemmas():
@@ -85,17 +84,17 @@ def custom_transform(example):
                 if synonyms:
                     word = random.choice(synonyms)
         
-        # 拼写错误 (18%概率)
+
         if random.random() < 0.18 and len(word) > 3:
             word_list = list(word)
-            # 随机选择一个字符进行替换
+
             char_idx = random.randint(0, len(word) - 1)
             original_char = word[char_idx].lower()
             
             if original_char in keyboard_neighbors:
-                # 用相邻键替换
+            
                 new_char = random.choice(keyboard_neighbors[original_char])
-                # 保持原始大小写
+           
                 if word[char_idx].isupper():
                     new_char = new_char.upper()
                 word_list[char_idx] = new_char
@@ -103,10 +102,9 @@ def custom_transform(example):
         
         transformed_words.append(word)
     
-    # 还原为句子
+
     detokenizer = TreebankWordDetokenizer()
     example["text"] = detokenizer.detokenize(transformed_words)
 
-    ##### YOUR CODE ENDS HERE ######
 
     return example
