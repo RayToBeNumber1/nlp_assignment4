@@ -17,7 +17,7 @@
 \usepackage{caption}
 
 \title{Assignment 4: Fine-tuning Language Models}
-\author{Your Name}
+\author{Rui Xu (rx2254)}
 \date{\today}
 
 \begin{document}
@@ -26,7 +26,7 @@
 
 \noindent\textbf{Submission Links:}
 \begin{itemize}
-    \item \textbf{GitHub Repository:} \url{https://github.com/xxx/xxx}
+    \item \textbf{GitHub Repository:} \url{https://github.com/RayToBeNumber1/nlp_assignment4}
     \item \textbf{Model Checkpoint (Google Drive):} \href{https://drive.google.com/drive/folders/1nHNx0I1XuhGsclWLKMQSMzCEyR_MQAmn?dmr=1&ec=wgc-drive-globalnav-goto}{Link to Model Checkpoint}
 \end{itemize}
 
@@ -84,7 +84,7 @@ Change & +0.45\% & +2.31\% & -1.86\% \\
 
 \textit{Intuition:} Data augmentation teaches the model invariant features (e.g., ``movie'' = ``film'', ``amasing'' = ``amazing''). By training on both clean and noisy examples, the model learned robust representations that generalize better, achieving a win-win outcome.
 
-\textit{Limitation:} Our approach only covers synonyms and typos. Real-world OOD data may include slang, internet abbreviations, sarcasm, or different writing styles. The model only handles the specific noise we introduced. For truly novel OOD patterns (e.g., ``This movie was lit fr fr''), diverse augmentation strategies or adaptive methods are needed.
+\textit{Limitation:} The approach only covers synonyms and typos. Real-world OOD data may include slang, internet abbreviations, sarcasm, or different writing styles. The model only handles the specific noise we introduced. For truly novel OOD patterns (e.g., ``This movie was lit fr fr''), diverse augmentation strategies or adaptive methods are needed.
 
 \section{Part 2: Fine-tuning T5 for Text-to-SQL}
 
@@ -196,8 +196,8 @@ Model fails to correctly calculate ``tomorrow'' as 11/12 and instead generates i
 
 The model performs well on simple point-to-point queries but struggles with temporal reasoning and complex nested queries.
 
-\paragraph{Q7: Performance Evaluation}
 
-We submit \texttt{t5\_ft\_experiment\_test.sql} and \texttt{t5\_ft\_experiment\_test.pkl} for Gradescope evaluation. The model achieved \textbf{39.09\% F1} on the test set, yielding a performance score of 15/25 points.
+\section{AI USE}
+Using Claude AI to help me understand the question and write some of the code in part1 and part2, also use AI to assistant me summarize the writeup.
 
 \end{document}
