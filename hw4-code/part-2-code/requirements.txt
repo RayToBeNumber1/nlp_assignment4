@@ -1,0 +1,15 @@
+numpy
+torch
+tokenizers
+transformers
+accelerate
+nltk
+tqdm
+pytest
+hypothesis
+wandb
+matplotlib
+plotly
+seaborn
+bitsandbytes
+sentencepiece

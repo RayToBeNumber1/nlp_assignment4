@@ -1,0 +1,203 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{
+    a4paper,
+    left=2cm,
+    right=2cm,
+    top=2cm,
+    bottom=2cm
+}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{needspace}
+\usepackage{caption}
+
+\title{Assignment 4: Fine-tuning Language Models}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\noindent\textbf{Submission Links:}
+\begin{itemize}
+    \item \textbf{GitHub Repository:} \url{https://github.com/xxx/xxx}
+    \item \textbf{Model Checkpoint (Google Drive):} \href{https://drive.google.com/drive/folders/1nHNx0I1XuhGsclWLKMQSMzCEyR_MQAmn?dmr=1&ec=wgc-drive-globalnav-goto}{Link to Model Checkpoint}
+\end{itemize}
+
+\section{Part 1: Fine-tuning BERT for Sentiment Classification}
+
+\paragraph{Q1: Fine-tuning BERT Model}
+
+We implemented the training loop in the \texttt{do\_train} function and successfully fine-tuned BERT-base-cased on the IMDB sentiment analysis dataset. The model achieved \textbf{93.05\%} accuracy on the original test set, exceeding the required 91\% threshold.
+
+\paragraph{Q2.1: Transformation Design}
+
+We implemented a combined transformation approach with two components:
+
+\begin{enumerate}
+    \item \textbf{Synonym Replacement (22\% probability):} Using NLTK's WordNet corpus, we randomly replace words with their synonyms. For each word, we query WordNet synsets and randomly select a synonym if available, excluding multi-word phrases.
+    \item \textbf{Typo Simulation (18\% probability):} We simulate keyboard typing errors by replacing characters with adjacent keys on a QWERTY keyboard layout. For each word longer than 3 characters, we randomly select one character and replace it with a neighboring key.
+\end{enumerate}
+
+\textbf{Example:} ``This movie is absolutely amazing!'' $\rightarrow$ ``This film iz absolutely astonishing!''
+
+\textbf{Rationale:} These transformations are realistic---users naturally use synonyms and make typos. They preserve sentiment labels while creating out-of-distribution (OOD) test cases.
+
+\paragraph{Q2.2: Evaluation Results}
+
+The baseline model's accuracy dropped from 93.05\% to \textbf{88.70\%} on the transformed test set, a decrease of \textbf{4.35 percentage points}, demonstrating the model's sensitivity to lexical variations.
+
+\paragraph{Q3: Data Augmentation}
+
+\textbf{Implementation:} We augmented the training set by adding 5,000 randomly transformed examples to the original 25,000 samples, creating a 30,000-sample training set.
+
+\textbf{Results:} Table~\ref{tab:results} shows the comparison between baseline and augmented models.
+
+\begin{center}
+\needspace{8\baselineskip}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Original Test} & \textbf{Transformed Test} & \textbf{Gap} \\
+\midrule
+Baseline & 93.05\% & 88.70\% & 4.35\% \\
+Augmented & 93.50\% & 91.01\% & 2.49\% \\
+\midrule
+Change & +0.45\% & +2.31\% & -1.86\% \\
+\bottomrule
+\end{tabular}
+
+\captionof{table}{Performance comparison of baseline and augmented models.}
+\label{tab:results}
+\end{center}
+
+\textbf{Analysis:}
+
+\textit{(1) Transformed Test Performance:} Yes, significantly improved. Accuracy increased from 88.70\% to 91.01\% (+2.31\%). The model learned to focus on semantic content rather than exact word choices.
+
+\textit{(2) Original Test Performance:} Surprisingly improved (93.05\% $\rightarrow$ 93.50\%, +0.45\%). Unlike the expected trade-off, augmentation enhanced both test sets. The augmented data provided regularization, reducing overfitting and improving generalization.
+
+\textit{Intuition:} Data augmentation teaches the model invariant features (e.g., ``movie'' = ``film'', ``amasing'' = ``amazing''). By training on both clean and noisy examples, the model learned robust representations that generalize better, achieving a win-win outcome.
+
+\textit{Limitation:} Our approach only covers synonyms and typos. Real-world OOD data may include slang, internet abbreviations, sarcasm, or different writing styles. The model only handles the specific noise we introduced. For truly novel OOD patterns (e.g., ``This movie was lit fr fr''), diverse augmentation strategies or adaptive methods are needed.
+
+\section{Part 2: Fine-tuning T5 for Text-to-SQL}
+
+\paragraph{Q4: Data Statistics}
+
+\begin{center}
+\needspace{8\baselineskip}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Statistics} & \textbf{Train} & \textbf{Dev} \\
+\midrule
+\multicolumn{3}{l}{\textit{Before preprocessing (word-based)}} \\
+Number of examples & 4,225 & 466 \\
+Mean NL length & 10.96 & 10.91 \\
+Mean SQL length & 60.90 & 58.90 \\
+Vocab size (NL) & 868 & 444 \\
+Vocab size (SQL) & 644 & 393 \\
+\midrule
+\multicolumn{3}{l}{\textit{After preprocessing (token-based)}} \\
+Mean NL length & 18.10 & 18.07 \\
+Mean SQL length & 217.37 & 211.05 \\
+T5 vocab size & 32,100 & 32,100 \\
+\bottomrule
+\end{tabular}
+
+\captionof{table}{Data statistics. We use T5 SentencePiece tokenizer without additional preprocessing.}
+\label{tab:data_stats}
+\end{center}
+
+\paragraph{Q5: T5 Implementation}
+
+\begin{center}
+\needspace{8\baselineskip}
+\small
+\begin{tabular}{p{2.5cm}p{11.5cm}}
+\toprule
+\textbf{Design} & \textbf{Description} \\
+\midrule
+Data processing & Added task prefix ``translate English to SQL: '' to NL inputs. Dynamic padding via \texttt{pad\_sequence}. \\
+Tokenization & T5-small tokenizer (32,100 vocab). NL max length: 128 tokens; SQL max length: 768 tokens (to accommodate complex queries averaging 217 tokens). Teacher forcing applied during training. \\
+Architecture & Fine-tuned complete T5-small (60M params, 6-layer encoder/decoder). Beam search generation (width=4, max\_length=768). \\
+Hyperparameters & LR: 1e-4, Cosine scheduler (2 epochs warmup), Batch: 8/16, Max epochs: 20, Patience: 5. Stopped at Epoch 12 (best: Epoch 7). \\
+\bottomrule
+\end{tabular}
+
+\captionof{table}{T5 implementation details.}
+\label{tab:t5_config}
+\end{center}
+
+\paragraph{Q6: Results and Error Analysis}
+
+\begin{center}
+\needspace{8\baselineskip}
+\begin{tabular}{lccc}
+\toprule
+\textbf{System} & \textbf{Record EM} & \textbf{Record F1} & \textbf{SQL EM} \\
+\midrule
+\textbf{Dev Results} & & & \\
+T5 fine-tuned & 30.26\% & 38.31\% & 1.29\% \\
+\textbf{Test Results} & & & \\
+T5 fine-tuning & N/A & 39.09\% & N/A \\
+\bottomrule
+\end{tabular}
+
+\captionof{table}{Results (SQL error rate: 46.78\%). Test evaluated on Gradescope.}
+\label{tab:t5_results}
+\end{center}
+
+\textbf{Error Analysis (Table 5):}
+
+\begin{center}
+\needspace{12\baselineskip}
+\small
+\begin{tabular}{p{2.8cm}p{4.2cm}p{6.8cm}}
+\toprule
+\textbf{Error Type} & \textbf{Example} & \textbf{Error Description \& Statistics} \\
+\midrule
+
+Missing SELECT & 
+\textbf{Input:} ``flights from phoenix to milwaukee'' \newline
+\textbf{Generated:} \texttt{SQL\_service\_1 FROM flight WHERE from\_airport = 'PHX' AND to\_airport = 'MKE'} \newline
+\textbf{Expected:} \texttt{SELECT DISTINCT flight\_id FROM flight WHERE from\_airport = 'PHX' AND to\_airport = 'MKE'} &
+Model omits \texttt{SELECT} keywords and starts with malformed fragments like \texttt{SQL\_service\_1}. The logic is correct but syntax is invalid. \newline
+\textbf{COUNT/TOTAL:} 65/466 (14\%). \\
+\addlinespace
+
+Truncated queries & 
+\textbf{Input:} ``afternoon flights washington to boston'' \newline
+\textbf{Generated:} \texttt{SELECT flight\_id FROM flight WHERE from\_airport IN (SELECT airport\_code FROM airport WHERE city\_name = 'WASHINGTON'} (incomplete) \newline
+\textbf{Expected:} \texttt{...city\_name = 'WASHINGTON') AND to\_airport IN (SELECT airport\_code FROM airport WHERE city\_name = 'BOSTON') AND departure\_time > 1200} &
+Queries are cut off mid-sentence due to generation length limits or decoding issues, missing closing parentheses or WHERE conditions. \newline
+\textbf{COUNT/TOTAL:} 53/466 (11\%). \\
+\addlinespace
+
+Temporal errors & 
+\textbf{Input:} ``flights tomorrow denver to philadelphia'' \newline
+\textbf{Generated:} \texttt{...WHERE month = 1 AND day = 15} \newline
+\textbf{Expected:} \texttt{...WHERE month = 11 AND day = 12} (context date: 11/11) &
+Model fails to correctly calculate ``tomorrow'' as 11/12 and instead generates incorrect date values. Temporal reasoning on relative expressions is weak. \newline
+\textbf{COUNT/TOTAL:} 48/466 (10\%). \\
+
+\bottomrule
+\end{tabular}
+
+\captionof{table}{Error analysis on dev set. Three error types account for 35\% of errors.}
+\label{tab:error_analysis}
+\end{center}
+
+The model performs well on simple point-to-point queries but struggles with temporal reasoning and complex nested queries.
+
+\paragraph{Q7: Performance Evaluation}
+
+We submit \texttt{t5\_ft\_experiment\_test.sql} and \texttt{t5\_ft\_experiment\_test.pkl} for Gradescope evaluation. The model achieved \textbf{39.09\% F1} on the test set, yielding a performance score of 15/25 points.
+
+\end{document}
